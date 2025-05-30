@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
 import { NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
 
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
@@ -8,6 +9,51 @@ export const dynamic = 'force-dynamic';
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY || '',
 });
+
+// Initialize Supabase client with service role key
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+  process.env.SUPABASE_SERVICE_ROLE_KEY || '',
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  }
+);
+
+async function uploadToSupabase(base64Data: string, bucket: string, fileName: string): Promise<string> {
+  try {
+    // Convert base64 to buffer
+    const buffer = Buffer.from(base64Data, 'base64');
+    
+    // Upload directly to Supabase Storage
+    const { data, error } = await supabase
+      .storage
+      .from(bucket)
+      .upload(fileName, buffer, {
+        contentType: 'image/png',
+        cacheControl: '3600',
+        upsert: false
+      });
+
+    if (error) {
+      console.error('Upload error:', error);
+      throw new Error(`Failed to upload to Supabase: ${error.message}`);
+    }
+
+    // Get public URL
+    const { data: { publicUrl } } = supabase
+      .storage
+      .from(bucket)
+      .getPublicUrl(fileName);
+
+    return publicUrl;
+  } catch (error: any) {
+    console.error('Upload error:', error);
+    throw error;
+  }
+}
 
 export async function POST(request: Request) {
   // Add CORS headers
@@ -51,33 +97,44 @@ export async function POST(request: Request) {
       );
     }
 
-    // Call OpenAI Responses API with GPT-Image-1
-    const response = await openai.responses.create({
-      model: "gpt-4.1-mini",  // This model can use the image generation tool
-      input: body.prompt,
-      tools: [{
-        type: "image_generation",
-        size: "1024x1536",
-        quality: "high"
-      }]
+    // Upload reference images if provided
+    let referenceImageUrls: string[] = [];
+    if (body.referenceImages?.length > 0) {
+      for (let i = 0; i < body.referenceImages.length; i++) {
+        const fileName = `ref-${Date.now()}-${i}-${Math.random().toString(36).substring(7)}.png`;
+        const url = await uploadToSupabase(body.referenceImages[i], 'user-images', fileName);
+        referenceImageUrls.push(url);
+      }
+    }
+
+    // Generate image using GPT-Image-1
+    const response = await openai.images.generate({
+      model: "gpt-image-1",
+      prompt: body.prompt,
+      n: 1,
+      size: "1024x1024",
+      quality: "high"
     });
 
-    // Extract the base64 image from the response
-    const imageData = response.output
-      .filter(output => output.type === "image_generation_call")
-      .map(output => output.result)[0];
-
-    if (!imageData) {
+    if (!response.data?.[0]?.b64_json) {
       return new NextResponse(
         JSON.stringify({ error: 'No image was generated' }),
         { status: 500, headers }
       );
     }
 
-    // Return the base64 image data as a data URL
+    // Upload generated image to Supabase
+    const generatedFileName = `gen-${Date.now()}-${Math.random().toString(36).substring(7)}.png`;
+    const generatedImageUrl = await uploadToSupabase(
+      response.data[0].b64_json,
+      'generated-images',
+      generatedFileName
+    );
+
     return new NextResponse(
       JSON.stringify({ 
-        imageUrl: `data:image/png;base64,${imageData}`
+        imageUrl: generatedImageUrl,
+        referenceUrls: referenceImageUrls
       }),
       { status: 200, headers }
     );

@@ -1,16 +1,62 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Download } from 'lucide-react';
+import { Loader2, Download, Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function Home() {
   const [prompt, setPrompt] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [loading, setLoading] = useState(false);
+  const [referenceImages, setReferenceImages] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    const newImages: string[] = [];
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (!file.type.startsWith('image/')) {
+        toast.error(`${file.name} is not an image file`);
+        continue;
+      }
+
+      try {
+        const base64 = await fileToBase64(file);
+        newImages.push(base64);
+      } catch (error) {
+        toast.error(`Failed to process ${file.name}`);
+      }
+    }
+
+    setReferenceImages([...referenceImages, ...newImages]);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        const base64 = reader.result as string;
+        // Remove the data URL prefix (e.g., "data:image/jpeg;base64,")
+        const base64Data = base64.split(',')[1];
+        resolve(base64Data);
+      };
+      reader.onerror = (error) => reject(error);
+    });
+  };
+
+  const removeReferenceImage = (index: number) => {
+    setReferenceImages(referenceImages.filter((_, i) => i !== index));
+  };
 
   const generateThumbnail = async () => {
     if (!prompt.trim()) {
@@ -20,7 +66,7 @@ export default function Home() {
 
     try {
       setLoading(true);
-      setImageUrl(''); // Clear previous image
+      setImageUrl('');
 
       const response = await fetch('/api/generate-thumbnail', {
         method: 'POST',
@@ -29,11 +75,11 @@ export default function Home() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          prompt: `Create a YouTube thumbnail image with the following description: ${prompt}. Make it eye-catching, professional, and suitable for YouTube. Include space for text overlay.`
+          prompt: `Create a YouTube thumbnail image with the following description: ${prompt}. Make it eye-catching, professional, and suitable for YouTube. Include space for text overlay.`,
+          referenceImages: referenceImages
         }),
       });
 
-      // First try to parse the response as JSON
       let data;
       try {
         data = await response.json();
@@ -57,7 +103,7 @@ export default function Home() {
     } catch (error: any) {
       console.error('Error:', error);
       toast.error(error.message || 'Failed to generate thumbnail. Please try again.');
-      setImageUrl(''); // Clear any partial results
+      setImageUrl('');
     } finally {
       setLoading(false);
     }
@@ -87,6 +133,46 @@ export default function Home() {
                 disabled={loading}
               />
             </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Reference Images (Optional)</label>
+              <div className="flex flex-wrap gap-2">
+                {referenceImages.map((img, index) => (
+                  <div key={index} className="relative w-24 h-24">
+                    <img
+                      src={`data:image/png;base64,${img}`}
+                      alt={`Reference ${index + 1}`}
+                      className="w-full h-full object-cover rounded-lg"
+                    />
+                    <button
+                      onClick={() => removeReferenceImage(index)}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+                <Button
+                  variant="outline"
+                  className="w-24 h-24 flex flex-col items-center justify-center gap-1"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={loading}
+                >
+                  <Upload size={24} />
+                  <span className="text-xs">Add Image</span>
+                </Button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={handleFileUpload}
+                  disabled={loading}
+                />
+              </div>
+            </div>
+
             <Button
               onClick={generateThumbnail}
               disabled={!prompt.trim() || loading}
