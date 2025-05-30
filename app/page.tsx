@@ -4,13 +4,14 @@ import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Download, Upload, X } from 'lucide-react';
+import { Loader2, Download, Upload, X, Wand2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function Home() {
   const [prompt, setPrompt] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [loading, setLoading] = useState(false);
+  const [refining, setRefining] = useState(false);
   const [referenceImages, setReferenceImages] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -56,6 +57,37 @@ export default function Home() {
 
   const removeReferenceImage = (index: number) => {
     setReferenceImages(referenceImages.filter((_, i) => i !== index));
+  };
+
+  const refinePrompt = async () => {
+    if (!prompt.trim()) {
+      toast.error('Please enter a prompt to refine');
+      return;
+    }
+
+    try {
+      setRefining(true);
+      const response = await fetch('/api/refine-prompt', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prompt: prompt.trim() }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to refine prompt');
+      }
+
+      const data = await response.json();
+      setPrompt(data.refinedPrompt);
+      toast.success('Prompt refined successfully!');
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error('Failed to refine prompt. Please try again.');
+    } finally {
+      setRefining(false);
+    }
   };
 
   const generateThumbnail = async () => {
@@ -124,14 +156,28 @@ export default function Home() {
               <label htmlFor="prompt" className="text-sm font-medium">
                 Describe your thumbnail
               </label>
-              <Input
-                id="prompt"
-                placeholder="e.g., A futuristic city skyline with flying cars and neon lights"
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                className="w-full"
-                disabled={loading}
-              />
+              <div className="flex gap-2">
+                <Input
+                  id="prompt"
+                  placeholder="e.g., A futuristic city skyline with flying cars and neon lights"
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  className="flex-1"
+                  disabled={loading || refining}
+                />
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={refinePrompt}
+                  disabled={loading || refining || !prompt.trim()}
+                >
+                  {refining ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Wand2 className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
             </div>
 
             <div className="space-y-2">
