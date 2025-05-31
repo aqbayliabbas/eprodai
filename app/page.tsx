@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, Download, Upload, X, Wand2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { Textarea } from '@/components/ui/textarea';
 
 export default function Home() {
   const [prompt, setPrompt] = useState('');
@@ -47,7 +48,6 @@ export default function Home() {
       reader.readAsDataURL(file);
       reader.onload = () => {
         const base64 = reader.result as string;
-        // Remove the data URL prefix (e.g., "data:image/jpeg;base64,")
         const base64Data = base64.split(',')[1];
         resolve(base64Data);
       };
@@ -61,7 +61,7 @@ export default function Home() {
 
   const refinePrompt = async () => {
     if (!prompt.trim()) {
-      toast.error('Please enter a prompt to refine');
+      toast.error('Please enter a product description');
       return;
     }
 
@@ -72,27 +72,35 @@ export default function Home() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ prompt: prompt.trim() }),
+        body: JSON.stringify({ 
+          prompt: prompt.trim(),
+          referenceImages: referenceImages 
+        }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to refine prompt');
+        throw new Error('Failed to refine product description');
       }
 
       const data = await response.json();
       setPrompt(data.refinedPrompt);
-      toast.success('Prompt refined successfully!');
+      toast.success('Product description refined successfully!');
     } catch (error) {
       console.error('Error:', error);
-      toast.error('Failed to refine prompt. Please try again.');
+      toast.error('Failed to refine product description. Please try again.');
     } finally {
       setRefining(false);
     }
   };
 
-  const generateThumbnail = async () => {
+  const generateProductImage = async () => {
     if (!prompt.trim()) {
-      toast.error('Please enter a description for your thumbnail');
+      toast.error('Please enter a product description');
+      return;
+    }
+
+    if (referenceImages.length === 0) {
+      toast.error('Please upload at least one reference image');
       return;
     }
 
@@ -107,7 +115,7 @@ export default function Home() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          prompt: `Create a YouTube thumbnail image with the following description: ${prompt}. Make it eye-catching, professional, and suitable for YouTube. Include space for text overlay.`,
+          prompt: `Create a professional product image with the following description: ${prompt}. Make it suitable for e-commerce, with clean background and professional lighting.`,
           referenceImages: referenceImages
         }),
       });
@@ -123,7 +131,7 @@ export default function Home() {
       }
 
       if (!response.ok) {
-        throw new Error(data.error || data.details || 'Failed to generate thumbnail');
+        throw new Error(data.error || data.details || 'Failed to generate product image');
       }
 
       if (!data.imageUrl) {
@@ -131,10 +139,10 @@ export default function Home() {
       }
 
       setImageUrl(data.imageUrl);
-      toast.success('Thumbnail generated successfully!');
+      toast.success('Product image generated successfully!');
     } catch (error: any) {
       console.error('Error:', error);
-      toast.error(error.message || 'Failed to generate thumbnail. Please try again.');
+      toast.error(error.message || 'Failed to generate product image. Please try again.');
       setImageUrl('');
     } finally {
       setLoading(false);
@@ -145,24 +153,24 @@ export default function Home() {
     <div className="container mx-auto py-10 px-4">
       <Card className="max-w-3xl mx-auto">
         <CardHeader>
-          <CardTitle>YouTube Thumbnail Generator</CardTitle>
+          <CardTitle>E-commerce Product Image Generator</CardTitle>
           <CardDescription>
-            Generate eye-catching thumbnails for your YouTube videos using AI
+            Generate professional product images by combining reference photos and AI enhancement
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-4">
             <div className="space-y-2">
               <label htmlFor="prompt" className="text-sm font-medium">
-                Describe your thumbnail
+                Product Description
               </label>
               <div className="flex gap-2">
-                <Input
+                <Textarea
                   id="prompt"
-                  placeholder="e.g., A futuristic city skyline with flying cars and neon lights"
+                  placeholder="e.g., A sleek modern coffee mug in matte black finish with ergonomic handle, photographed on a white background with soft lighting"
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
-                  className="flex-1"
+                  className="flex-1 min-h-[100px]"
                   disabled={loading || refining}
                 />
                 <Button
@@ -170,6 +178,7 @@ export default function Home() {
                   size="icon"
                   onClick={refinePrompt}
                   disabled={loading || refining || !prompt.trim()}
+                  className="h-10"
                 >
                   {refining ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -181,10 +190,11 @@ export default function Home() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Reference Images (Optional)</label>
+              <label className="text-sm font-medium">Reference Images</label>
+              <p className="text-sm text-muted-foreground">Upload product images to merge and enhance</p>
               <div className="flex flex-wrap gap-2">
                 {referenceImages.map((img, index) => (
-                  <div key={index} className="relative w-24 h-24">
+                  <div key={index} className="relative w-32 h-32">
                     <img
                       src={`data:image/png;base64,${img}`}
                       alt={`Reference ${index + 1}`}
@@ -200,7 +210,7 @@ export default function Home() {
                 ))}
                 <Button
                   variant="outline"
-                  className="w-24 h-24 flex flex-col items-center justify-center gap-1"
+                  className="w-32 h-32 flex flex-col items-center justify-center gap-1"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={loading}
                 >
@@ -220,22 +230,22 @@ export default function Home() {
             </div>
 
             <Button
-              onClick={generateThumbnail}
-              disabled={!prompt.trim() || loading}
+              onClick={generateProductImage}
+              disabled={!prompt.trim() || loading || referenceImages.length === 0}
               className="w-full"
             >
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {loading ? 'Generating...' : 'Generate Thumbnail'}
+              {loading ? 'Generating...' : 'Generate Product Image'}
             </Button>
           </div>
 
           {imageUrl && (
             <div className="space-y-4">
-              <h3 className="text-lg font-medium">Generated Thumbnail</h3>
-              <div className="relative aspect-video w-full overflow-hidden rounded-lg border bg-muted">
+              <h3 className="text-lg font-medium">Generated Product Image</h3>
+              <div className="relative aspect-square w-full overflow-hidden rounded-lg border bg-muted">
                 <img
                   src={imageUrl}
-                  alt="Generated thumbnail"
+                  alt="Generated product"
                   className="w-full h-full object-contain"
                 />
               </div>
@@ -246,7 +256,7 @@ export default function Home() {
                   onClick={() => window.open(imageUrl, '_blank')}
                 >
                   <Download className="mr-2 h-4 w-4" />
-                  Open Full Size
+                  Download Full Size
                 </Button>
               </div>
             </div>

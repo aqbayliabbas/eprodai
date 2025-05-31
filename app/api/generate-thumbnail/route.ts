@@ -5,12 +5,10 @@ import { createClient } from '@supabase/supabase-js';
 export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
 
-// Initialize OpenAI outside of the handler
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY || '',
 });
 
-// Initialize Supabase client with service role key
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || '',
   process.env.SUPABASE_SERVICE_ROLE_KEY || '',
@@ -22,41 +20,7 @@ const supabase = createClient(
   }
 );
 
-async function uploadToSupabase(base64Data: string, bucket: string, fileName: string): Promise<string> {
-  try {
-    // Convert base64 to buffer
-    const buffer = Buffer.from(base64Data, 'base64');
-    
-    // Upload directly to Supabase Storage
-    const { data, error } = await supabase
-      .storage
-      .from(bucket)
-      .upload(fileName, buffer, {
-        contentType: 'image/png',
-        cacheControl: '3600',
-        upsert: false
-      });
-
-    if (error) {
-      console.error('Upload error:', error);
-      throw new Error(`Failed to upload to Supabase: ${error.message}`);
-    }
-
-    // Get public URL
-    const { data: { publicUrl } } = supabase
-      .storage
-      .from(bucket)
-      .getPublicUrl(fileName);
-
-    return publicUrl;
-  } catch (error: any) {
-    console.error('Upload error:', error);
-    throw error;
-  }
-}
-
 export async function POST(request: Request) {
-  // Add CORS headers
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -64,88 +28,93 @@ export async function POST(request: Request) {
     'Content-Type': 'application/json',
   };
 
-  // Handle preflight requests
   if (request.method === 'OPTIONS') {
     return new NextResponse(null, { headers });
   }
 
   try {
-    // Validate API key
-    if (!process.env.OPENAI_API_KEY) {
-      return new NextResponse(
-        JSON.stringify({ error: 'OpenAI API key is not configured' }),
-        { status: 500, headers }
-      );
-    }
+    const body = await request.json();
+    const { prompt, referenceImages } = body;
 
-    // Parse request body
-    let body;
-    try {
-      body = await request.json();
-    } catch (e) {
+    if (!prompt || !referenceImages || referenceImages.length === 0) {
       return new NextResponse(
-        JSON.stringify({ error: 'Invalid JSON in request body' }),
+        JSON.stringify({ error: 'Prompt and at least one reference image are required' }),
         { status: 400, headers }
       );
     }
 
-    // Validate prompt
-    if (!body?.prompt) {
-      return new NextResponse(
-        JSON.stringify({ error: 'Prompt is required' }),
-        { status: 400, headers }
-      );
-    }
-
-    // Upload reference images if provided
-    let referenceImageUrls: string[] = [];
-    if (body.referenceImages?.length > 0) {
-      for (let i = 0; i < body.referenceImages.length; i++) {
-        const fileName = `ref-${Date.now()}-${i}-${Math.random().toString(36).substring(7)}.png`;
-        const url = await uploadToSupabase(body.referenceImages[i], 'user-images', fileName);
-        referenceImageUrls.push(url);
-      }
-    }
-
-    // Generate image using GPT-Image-1
-    const response = await openai.images.generate({
-      model: "gpt-image-1",
-      prompt: body.prompt,
-      n: 1,
-      size: "1024x1024",
-      quality: "high"
-    });
-
-    if (!response.data?.[0]?.b64_json) {
-      return new NextResponse(
-        JSON.stringify({ error: 'No image was generated' }),
-        { status: 500, headers }
-      );
-    }
-
-    // Upload generated image to Supabase
-    const generatedFileName = `gen-${Date.now()}-${Math.random().toString(36).substring(7)}.png`;
-    const generatedImageUrl = await uploadToSupabase(
-      response.data[0].b64_json,
-      'generated-images',
-      generatedFileName
+    // Convert base64 images to Blobs
+    const imageBlobs = await Promise.all(
+      referenceImages.map(async (base64Data: string) => {
+        const binaryData = atob(base64Data);
+        const uint8Array = new Uint8Array(binaryData.length);
+        for (let i = 0; i < binaryData.length; i++) {
+          uint8Array[i] = binaryData.charCodeAt(i);
+        }
+        return new Blob([uint8Array], { type: 'image/png' });
+      })
     );
 
+    // Convert Blobs to Files
+    const imageFiles = imageBlobs.map((blob, index) => 
+      new File([blob], `image-${index}.png`, { type: 'image/png' })
+    );
+
+    // Call OpenAI API for image editing
+    const response = await openai.images.edit({
+      model: "gpt-image-1",
+      image: imageFiles,
+      prompt: `Create a professional product image: ${prompt}. Ensure high-quality commercial aesthetic with clean background and professional lighting.`,
+    });
+
+    if (!response.data || response.data.length === 0 || !response.data[0].b64_json) {
+      throw new Error('No image data received from OpenAI API');
+    }
+
+    // Convert the generated image base64 to Blob
+    const generatedBase64 = response.data[0].b64_json;
+    const binaryData = atob(generatedBase64);
+    const uint8Array = new Uint8Array(binaryData.length);
+    for (let i = 0; i < binaryData.length; i++) {
+      uint8Array[i] = binaryData.charCodeAt(i);
+    }
+    const generatedImageBlob = new Blob([uint8Array], { type: 'image/png' });
+
+    // Upload to Supabase
+    const timestamp = new Date().toISOString();
+    const randomId = crypto.randomUUID();
+    const fileName = `generated-${timestamp}-${randomId}.png`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('generated-images')
+      .upload(fileName, generatedImageBlob, {
+        contentType: 'image/png',
+        cacheControl: '3600',
+        upsert: true
+      });
+
+    if (uploadError) {
+      throw new Error('Failed to upload generated image to storage');
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('generated-images')
+      .getPublicUrl(fileName);
+
     return new NextResponse(
-      JSON.stringify({ 
-        imageUrl: generatedImageUrl,
-        referenceUrls: referenceImageUrls
+      JSON.stringify({
+        success: true,
+        imageUrl: publicUrl,
+        message: 'Image processed and stored successfully'
       }),
       { status: 200, headers }
     );
 
   } catch (error: any) {
-    console.error('Error in thumbnail generation:', error);
-    
-    // Return error response
+    console.error('Error processing image:', error);
     return new NextResponse(
-      JSON.stringify({ 
-        error: error.message || 'Internal server error',
+      JSON.stringify({
+        error: error.message || 'Failed to process image',
         details: error.toString()
       }),
       { status: 500, headers }
