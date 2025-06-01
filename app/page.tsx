@@ -9,6 +9,8 @@ import { toast } from 'sonner';
 import { Textarea } from '@/components/ui/textarea';
 
 export default function Home() {
+  // Drag-and-drop state
+  const [isDragging, setIsDragging] = useState(false);
   const [prompt, setPrompt] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [loading, setLoading] = useState(false);
@@ -16,8 +18,16 @@ export default function Home() {
   const [referenceImages, setReferenceImages] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
+  // Drag-and-drop and file input handler
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement> | React.DragEvent<HTMLDivElement>) => {
+    let files: FileList | null = null;
+    if ('dataTransfer' in e) {
+      files = e.dataTransfer.files;
+      e.preventDefault();
+      setIsDragging(false);
+    } else if ('target' in e && (e.target as HTMLInputElement).files) {
+      files = (e.target as HTMLInputElement).files;
+    }
     if (!files) return;
 
     const newImages: string[] = [];
@@ -150,116 +160,133 @@ export default function Home() {
   };
 
   return (
-    <div className="container mx-auto py-10 px-4">
-      <Card className="max-w-3xl mx-auto">
-        <CardHeader>
-          <CardTitle>E-commerce Product Image Generator</CardTitle>
-          <CardDescription>
-            Generate professional product images by combining reference photos and AI enhancement
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label htmlFor="prompt" className="text-sm font-medium">
-                Product Description
-              </label>
-              <div className="flex gap-2">
-                <Textarea
-                  id="prompt"
-                  placeholder="e.g., A sleek modern coffee mug in matte black finish with ergonomic handle, photographed on a white background with soft lighting"
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  className="flex-1 min-h-[100px]"
-                  disabled={loading || refining}
-                />
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={refinePrompt}
-                  disabled={loading || refining || !prompt.trim()}
-                  className="h-10"
-                >
-                  {refining ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Wand2 className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
+    <div className="min-h-screen w-full bg-gradient-to-br from-gray-50 via-white to-blue-50 flex flex-col items-center justify-center p-4">
+      <header className="mb-8 text-center">
+        <h1 className="text-4xl font-extrabold tracking-tight text-blue-900 drop-shadow-sm mb-2">
+          Product Image Generator
+        </h1>
+        <p className="text-lg text-muted-foreground max-w-xl mx-auto">
+          Instantly create professional e-commerce images. Enter a description, upload reference photos, and get a stunning product image.
+        </p>
+      </header>
+      <Card className="w-full max-w-2xl shadow-2xl border-2 border-blue-100">
+        <CardContent className="space-y-8 p-8">
+          {/* Prompt Section */}
+          <section aria-labelledby="prompt-label">
+            <label id="prompt-label" htmlFor="prompt" className="text-base font-semibold text-blue-900 mb-1 block">
+              Product Description
+            </label>
+            <div className="flex gap-2 items-start">
+              <Textarea
+                id="prompt"
+                placeholder="e.g., A sleek modern coffee mug in matte black finish with ergonomic handle, photographed on a white background with soft lighting"
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                className="flex-1 min-h-[100px] bg-blue-50/50 border-blue-200 focus:ring-blue-400"
+                disabled={loading || refining}
+                aria-disabled={loading || refining}
+              />
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={refinePrompt}
+                disabled={loading || refining || !prompt.trim()}
+                className="h-10 mt-1"
+                aria-label="Refine description"
+              >
+                {refining ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Wand2 className="h-4 w-4" />
+                )}
+              </Button>
             </div>
+          </section>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Reference Images</label>
-              <p className="text-sm text-muted-foreground">Upload product images to merge and enhance</p>
-              <div className="flex flex-wrap gap-2">
-                {referenceImages.map((img, index) => (
-                  <div key={index} className="relative w-32 h-32">
-                    <img
-                      src={`data:image/png;base64,${img}`}
-                      alt={`Reference ${index + 1}`}
-                      className="w-full h-full object-cover rounded-lg"
-                    />
-                    <button
-                      onClick={() => removeReferenceImage(index)}
-                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"
-                    >
-                      <X size={14} />
-                    </button>
-                  </div>
-                ))}
-                <Button
-                  variant="outline"
-                  className="w-32 h-32 flex flex-col items-center justify-center gap-1"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={loading}
-                >
-                  <Upload size={24} />
-                  <span className="text-xs">Add Image</span>
-                </Button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  className="hidden"
-                  onChange={handleFileUpload}
-                  disabled={loading}
-                />
-              </div>
-            </div>
-
-            <Button
-              onClick={generateProductImage}
-              disabled={!prompt.trim() || loading || referenceImages.length === 0}
-              className="w-full"
+          {/* Reference Images Section */}
+          <section aria-labelledby="images-label">
+            <label id="images-label" className="text-base font-semibold text-blue-900 mb-1 block">Reference Images</label>
+            <p className="text-sm text-muted-foreground mb-2">Drag & drop or upload product images to merge and enhance</p>
+            <div
+              className={`flex flex-wrap gap-3 p-3 rounded-lg border-2 border-dashed transition-colors ${isDragging ? 'border-blue-400 bg-blue-50/50' : 'border-blue-200 bg-white'}`}
+              onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
+              onDragLeave={e => { e.preventDefault(); setIsDragging(false); }}
+              onDrop={handleFileUpload}
+              tabIndex={0}
+              aria-label="Drop reference images here"
             >
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {loading ? 'Generating...' : 'Generate Product Image'}
-            </Button>
-          </div>
+              {referenceImages.map((img, index) => (
+                <div key={index} className="relative w-28 h-28 group shadow-sm">
+                  <img
+                    src={`data:image/png;base64,${img}`}
+                    alt={`Reference ${index + 1}`}
+                    className="w-full h-full object-cover rounded-lg border border-blue-200"
+                  />
+                  <button
+                    onClick={() => removeReferenceImage(index)}
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow group-hover:scale-110 transition"
+                    aria-label={`Remove reference image ${index + 1}`}
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
+              <Button
+                variant="outline"
+                className="w-28 h-28 flex flex-col items-center justify-center gap-1 border-blue-200"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={loading}
+                aria-label="Add reference image"
+              >
+                <Upload size={24} />
+                <span className="text-xs">Add Image</span>
+              </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={handleFileUpload}
+                disabled={loading}
+              />
+            </div>
+          </section>
 
+          {/* Generate Button */}
+          <Button
+            onClick={generateProductImage}
+            disabled={!prompt.trim() || loading || referenceImages.length === 0}
+            className="w-full text-lg py-6 bg-blue-700 hover:bg-blue-800 text-white font-semibold shadow"
+            aria-busy={loading}
+          >
+            {loading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
+            {loading ? 'Generating...' : 'Generate Product Image'}
+          </Button>
+
+          {/* Result Section */}
           {imageUrl && (
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium">Generated Product Image</h3>
-              <div className="relative aspect-square w-full overflow-hidden rounded-lg border bg-muted">
+            <section aria-labelledby="result-label" className="pt-6 border-t border-blue-100">
+              <h3 id="result-label" className="text-lg font-bold text-blue-900 mb-3">Generated Product Image</h3>
+              <div className="relative aspect-square w-full max-w-xs mx-auto overflow-hidden rounded-xl border-2 border-blue-200 bg-blue-50 flex items-center justify-center">
                 <img
                   src={imageUrl}
                   alt="Generated product"
-                  className="w-full h-full object-contain"
+                  className="w-full h-full object-contain drop-shadow-lg"
                 />
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 mt-4">
                 <Button
                   variant="outline"
-                  className="w-full"
+                  className="w-full border-blue-200"
                   onClick={() => window.open(imageUrl, '_blank')}
+                  aria-label="Download full size image"
                 >
                   <Download className="mr-2 h-4 w-4" />
                   Download Full Size
                 </Button>
               </div>
-            </div>
+            </section>
           )}
         </CardContent>
       </Card>
