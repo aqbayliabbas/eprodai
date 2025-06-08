@@ -6,6 +6,7 @@ import { Loader2, Download, Upload, X, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { Textarea } from "@/components/ui/textarea";
 import Link from "next/link";
+import DashboardProfileDropdown from "./DashboardProfileDropdown";
 
 export default function MainAppPage() {
   // --- Product Image Generator logic copied from previous dashboard ---
@@ -140,29 +141,35 @@ export default function MainAppPage() {
   };
 
   return (
-    <div className="w-full">
-      <header className="mb-8 mt-10 text-center">
-        <h1 className="text-4xl font-extrabold tracking-tight text-blue-900 drop-shadow-sm mb-2">
-          Product Image Generator
-        </h1>
-        <p className="text-lg text-muted-foreground max-w-xl mx-auto">
-          Instantly create professional e-commerce images. Enter a description, upload reference photos, and get a stunning product image.
-        </p>
+    <div className="w-full min-h-screen bg-[#f9f6f1] flex flex-col px-10 pb-12">
+      {/* Dashboard Header */}
+      <header className="sticky top-0 z-30 w-full bg-[#f9f6f1] shadow-sm flex items-center justify-between px-8 py-4 mb-10">
+        {/* Logo */}
+        <div className="flex items-center space-x-2">
+          <span className="text-2xl font-bold text-[#6B46C1] tracking-tight">EPROD</span>
+        </div>
+        {/* Profile Dropdown */}
+        <DashboardProfileDropdown />
       </header>
-      <Card className="w-full max-w-2xl mx-auto shadow-2xl border-2 border-blue-100">
-        <CardContent className="space-y-8 p-8">
+      <div className="w-full max-w-5xl mx-auto flex flex-col md:flex-row gap-10 bg-[#f9f6f1] p-6 rounded-2xl shadow-lg border-2 border-purple-100">
+        {/* Left: Prompt & Upload */}
+        <div className="flex-1 flex flex-col gap-8">
           {/* Prompt Section */}
           <section aria-labelledby="prompt-label">
-            <label id="prompt-label" htmlFor="prompt" className="text-base font-semibold text-blue-900 mb-1 block">
+            <label id="prompt-label" htmlFor="prompt" className="text-base font-semibold text-[#212121] mb-1 block">
               Product Description
             </label>
             <div className="flex gap-2 items-start">
-              <Textarea
+              <textarea
                 id="prompt"
                 placeholder="e.g., A sleek modern coffee mug in matte black finish with ergonomic handle, photographed on a white background with soft lighting"
                 value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                className="w-full min-h-[80px]"
+                onChange={e => setPrompt(e.target.value)}
+                className="w-full min-h-[120px] rounded-xl bg-[#f9f6f1] shadow p-4 text-base placeholder:text-[#a89b8c] appearance-none outline-none border-none focus:ring-2 focus:ring-purple-400 transition-all duration-200 resize-none scrollbar-none overflow-y-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                /* Hide scrollbar for Webkit browsers */
+                /* ::-webkit-scrollbar { display: none; } */
+                spellCheck={false}
+                autoComplete="off"
               />
               <Button type="button" variant="outline" size="icon" disabled={refining} onClick={refinePrompt}>
                 {refining ? <Loader2 className="animate-spin w-4 h-4" /> : <Wand2 className="w-4 h-4" />}
@@ -171,65 +178,64 @@ export default function MainAppPage() {
           </section>
           {/* Reference Images Section */}
           <section>
-            <label className="text-base font-semibold text-blue-900 mb-1 block">Reference Images</label>
+            <label className="text-base font-semibold text-[#212121] mb-1 block">Reference Images</label>
             <div
-              className={`border-2 border-dashed rounded-lg p-4 flex flex-wrap gap-4 min-h-[120px] items-center justify-center transition ${isDragging ? "border-blue-500 bg-blue-50" : "border-blue-200"}`}
-              onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
-              onDragLeave={e => { e.preventDefault(); setIsDragging(false); }}
+              className={`border-2 border-dashed rounded-lg p-4 flex flex-wrap gap-4 min-h-[120px] items-center justify-center transition ${isDragging ? "border-purple-700 bg-[#f9f6f1]" : "border-purple-200"}`}
+              onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+              onDragLeave={(e) => { e.preventDefault(); setIsDragging(false); }}
               onDrop={handleFileUpload}
             >
-              <label className="flex flex-col items-center justify-center cursor-pointer w-32 h-32 border border-blue-200 rounded-lg hover:bg-blue-50 transition">
-                <Upload className="w-8 h-8 text-blue-400 mb-2" />
-                <span className="text-xs text-blue-600">Add Image</span>
+              <label className="flex flex-col items-center justify-center cursor-pointer w-full h-48 border border-purple-200 rounded-lg hover:bg-[#f9f6f1] transition p-0 m-0">
+                <Upload className="w-10 h-10 text-blue-400 mb-2" />
+                <span className="text-base text-blue-600 font-medium">Add Image</span>
                 <input type="file" accept="image/*" multiple className="hidden" ref={fileInputRef} onChange={handleFileUpload} />
+                <span className="block mt-2 text-sm text-[#a89b8c]">Drag and drop or click to upload images</span>
               </label>
               {referenceImages.map((img, idx) => (
-                <div key={idx} className="relative w-32 h-32 border border-blue-200 rounded-lg overflow-hidden group">
+                <div key={idx} className="relative w-32 h-32 border border-purple-200 rounded-lg overflow-hidden group">
                   <img
                     src={`data:image/png;base64,${img}`}
                     alt={`Reference ${idx + 1}`}
                     className="object-cover w-full h-full"
                   />
                   <button
-                    className="absolute top-1 right-1 bg-white rounded-full p-1 shadow hover:bg-red-100 transition"
+                    className="absolute top-1 right-1 bg-[#f9f6f1] rounded-full p-1 shadow hover:bg-red-100 transition"
                     onClick={() => removeReferenceImage(idx)}
                     type="button"
                   >
-                    <X className="w-4 h-4 text-red-500" />
+                    <X className="w-4 h-4 text-red-400 group-hover:text-red-600" />
                   </button>
                 </div>
               ))}
             </div>
           </section>
           {/* Generate Button */}
-          <Button
-            className="w-full"
-            onClick={generateProductImage}
-            disabled={loading || !prompt.trim() || referenceImages.length === 0}
-          >
-            {loading ? <Loader2 className="animate-spin w-4 h-4 mr-2" /> : <Download className="w-4 h-4 mr-2" />}
-            Generate Product Image
+          <Button className="w-full bg-purple-700 text-white font-bold py-3 rounded-xl shadow hover:bg-purple-800 transition text-lg mt-2" onClick={generateProductImage} disabled={loading || refining}>
+            {loading ? <Loader2 className="animate-spin w-5 h-5 mr-2 inline" /> : <Download className="w-5 h-5 mr-2 inline" />} Generate Product Image
           </Button>
-          {/* Generated Image */}
-          {imageUrl && (
-            <div className="flex flex-col items-center mt-8">
-              <img src={imageUrl} alt="Generated Product" className="rounded-lg shadow-lg max-w-xs" />
+        </div>
+        {/* Right: Image Result */}
+        <div className="flex-1 flex flex-col items-center justify-center min-h-[400px] bg-white/60 rounded-xl border border-purple-100 p-6">
+          {imageUrl ? (
+            <div className="flex flex-col items-center">
+              <img src={imageUrl} alt="Generated Product" className="rounded-xl shadow-lg max-w-full max-h-[400px] object-contain mb-4" />
               <Button
-                asChild
                 className="mt-4"
                 onClick={() => {
-                  const a = document.createElement("a");
+                  const a = document.createElement('a');
                   a.href = imageUrl;
-                  a.download = "product-image.png";
+                  a.download = 'product-image.png';
                   a.click();
                 }}
               >
                 <span>Download Image</span>
               </Button>
             </div>
+          ) : (
+            <div className="text-[#212121] opacity-60 text-center">Your generated product image will appear here.</div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

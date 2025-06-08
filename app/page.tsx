@@ -73,7 +73,7 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen w-full bg-[#f9f6f1] flex flex-col">
       {/* Top Navigation Bar */}
-      <nav className="w-full flex items-center justify-between px-8 py-4">
+      <nav className="w-full flex items-center justify-between px-6 py-4">
         <div className="flex items-center space-x-2">
           <span className="text-2xl font-bold text-[#212121]">EPROD</span>
           <span className="bg-purple-700 text-purple-100 text-xs font-semibold px-2 py-1 rounded-full ml-2">-30% off with code SUMMER</span>
@@ -82,12 +82,12 @@ export default function LandingPage() {
           <a href="#features" className="text-[#212121] hover:text-purple-700 font-medium">Features</a>
           <a href="#pricing" className="text-[#212121] hover:text-purple-700 font-medium">Pricing</a>
           <a href="#faq" className="text-[#212121] hover:text-purple-700 font-medium">FAQ</a>
-          <a href="/main-app" className="bg-purple-700 text-white px-4 py-2 rounded-lg shadow hover:bg-purple-800 transition font-semibold">Get Started</a>
+          <a href="/main-app" className="bg-purple-700 text-white px-6 py-2 rounded-lg shadow hover:bg-purple-800 transition font-semibold">Get Started</a>
         </div>
       </nav>
 
       {/* Hero Section */}
-      <main className="flex flex-col items-center justify-center flex-1 text-center mt-8">
+      <main className="flex flex-col items-center justify-center flex-1 text-center mt-8 px-10">
         {/* Author */}
         <div className="flex flex-col items-center mb-4">
           <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="Author" className="w-12 h-12 rounded-full border-2 border-purple-400 mb-2" />
@@ -103,10 +103,10 @@ export default function LandingPage() {
         </p>
         {/* CTA Button */}
         <a href="/main-app">
-          <button className="px-8 py-3 bg-purple-700 text-purple-100 font-bold rounded-xl shadow hover:bg-purple-800 transition mb-6">Get instant access</button>
+          <button className="px-6 py-3 bg-purple-700 text-purple-100 font-bold rounded-xl shadow hover:bg-purple-800 transition mb-6">Get instant access</button>
         </a>
         {/* Social Proof Avatars */}
-        <div className="flex items-center justify-center space-x-[-10px] mt-2">
+        <div className="flex items-center justify-center space-x-[-10px] mt-2 px-8">
           {[...Array(6)].map((_, i) => (
             <img key={i} src={`https://randomuser.me/api/portraits/men/${30+i}.jpg`} alt="User" className="w-8 h-8 rounded-full border-2 border-purple-900 shadow -ml-2" />
           ))}
@@ -115,40 +115,30 @@ export default function LandingPage() {
       </main>
 
       {/* Social Proof & Timeline Section */}
-      <section className="w-full max-w-5xl mx-auto py-16 flex flex-col items-center px-4">
-        {/* Avatars and Testimonial */}
-        <div className="flex flex-col items-center mb-12 gap-4">
-          <div className="flex items-center justify-center gap-[-10px]">
-            {[...Array(6)].map((_, i) => (
-              <img key={i} src={`https://randomuser.me/api/portraits/men/${40+i}.jpg`} alt="User" className="w-10 h-10 rounded-full border-2 border-white shadow -ml-3" />
-            ))}
-          </div>
-          <div className="text-lg text-[#212121] font-semibold mt-2">
-            2,100 <span className="font-normal italic text-[#212121]">creators love EPROD</span>
-          </div>
-        </div>
+      <section className="w-full max-w-5xl mx-auto py-16 flex flex-col items-center px-6">
+        {/* Timeline as Cards */}
         {/* Timeline as Cards */}
         <div className="w-full flex flex-wrap justify-center gap-6 mt-2">
           {/* Card 1 */}
-          <div className="bg-white rounded-2xl shadow-lg flex flex-col items-center p-6 w-full sm:w-56 max-w-xs">
+          <div className="bg-[#f9f6f1] rounded-2xl shadow-lg flex flex-col items-center p-6 w-full sm:w-56 max-w-xs">
             <span className="text-5xl mb-3">🧠</span>
             <div className="font-bold text-[#212121] text-lg mb-1">Day 1</div>
             <div className="text-sm text-[#212121] text-center">Brainstorm your product idea</div>
           </div>
           {/* Card 2 */}
-          <div className="bg-white rounded-2xl shadow-lg flex flex-col items-center p-6 w-full sm:w-56 max-w-xs">
+          <div className="bg-[#f9f6f1] rounded-2xl shadow-lg flex flex-col items-center p-6 w-full sm:w-56 max-w-xs">
             <span className="text-5xl mb-3">📸</span>
             <div className="font-bold text-[#212121] text-lg mb-1">Day 3</div>
             <div className="text-sm text-[#212121] text-center">Upload and generate images</div>
           </div>
           {/* Card 3 */}
-          <div className="bg-white rounded-2xl shadow-lg flex flex-col items-center p-6 w-full sm:w-56 max-w-xs">
+          <div className="bg-[#f9f6f1] rounded-2xl shadow-lg flex flex-col items-center p-6 w-full sm:w-56 max-w-xs">
             <span className="text-5xl mb-3">🎨</span>
             <div className="font-bold text-[#212121] text-lg mb-1">Day 7</div>
             <div className="text-sm text-[#212121] text-center">Edit and refine with AI tools</div>
           </div>
           {/* Card 4 */}
-          <div className="bg-white rounded-2xl shadow-lg flex flex-col items-center p-6 w-full sm:w-56 max-w-xs">
+          <div className="bg-[#f9f6f1] rounded-2xl shadow-lg flex flex-col items-center p-6 w-full sm:w-56 max-w-xs">
             <span className="text-5xl mb-3">🚀</span>
             <div className="font-bold text-[#212121] text-lg mb-1">Day 10</div>
             <div className="text-sm text-[#212121] text-center">Download and share your images</div>
@@ -157,7 +147,7 @@ export default function LandingPage() {
       </section>
 
       {/* Pain Points vs Solution Section */}
-      <section className="w-full bg-[#18191a] py-20 px-4 flex flex-col items-center">
+      <section className="w-full bg-[#18191a] py-20 px-6 flex flex-col items-center">
         {/* Headline */}
         <h2 className="text-3xl sm:text-5xl font-extrabold text-white text-center mb-12">
           Stop <span className="italic text-[#e53935] font-bold">paying high amounts</span> for ads,<br />
@@ -196,7 +186,7 @@ export default function LandingPage() {
       </section>
 
       {/* Flywheel Section */}
-      <section className="w-full bg-white py-20 px-4 flex flex-col items-center">
+      <section className="w-full bg-[#f9f6f1] py-20 px-6 flex flex-col items-center">
         <h2 className="text-4xl sm:text-5xl font-extrabold text-[#212121] text-center mb-8">
           Start a product image <span className="relative inline-block"><span className="bg-[#b2e9d2] absolute inset-x-0 bottom-0 h-6 -z-10 rounded-md"></span>flywheel</span>
         </h2>
@@ -212,13 +202,13 @@ export default function LandingPage() {
       </section>
 
       {/* Pricing Section */}
-      <section className="w-full bg-white py-20 px-4 flex flex-col items-center">
+      <section className="w-full bg-[#f9f6f1] py-20 px-6 flex flex-col items-center">
         <h2 className="text-4xl sm:text-5xl font-extrabold text-[#212121] text-center mb-12">
           Create stunning product images,<br /> boost your sales
         </h2>
         <div className="flex flex-col md:flex-row gap-8 max-w-5xl w-full justify-center items-stretch">
           {/* Basic Plan */}
-          <div className="flex-1 bg-white border border-[#212121] rounded-2xl shadow-lg p-8 flex flex-col justify-between min-w-[300px]">
+          <div className="flex-1 bg-[#f9f6f1] border border-[#212121] rounded-2xl shadow-lg p-8 flex flex-col justify-between min-w-[300px]">
             <div>
               <div className="text-xl font-bold text-[#212121] mb-2">EPROD Basic</div>
               <div className="text-[#212121] text-sm mb-6">Everything you need to create pro images fast</div>
@@ -240,7 +230,7 @@ export default function LandingPage() {
           </div>
           {/* Pro Bundle Plan */}
           <div className="flex-1 bg-[#18191a] border border-[#212121] rounded-2xl shadow-lg p-8 flex flex-col justify-between min-w-[300px] relative">
-            <div className="absolute -top-5 left-1/2 -translate-x-1/2 bg-yellow-400 text-[#212121] font-bold text-xs px-4 py-1 rounded-full shadow">BEST VALUE</div>
+            <div className="absolute -top-5 left-1/2 -translate-x-1/2 bg-yellow-400 text-[#212121] font-bold text-xs px-6 py-1 rounded-full shadow">BEST VALUE</div>
             <div>
               <div className="text-xl font-bold text-white mb-2">EPROD Pro Bundle</div>
               <div className="text-gray-200 text-sm mb-6">Unlock all features & exclusive bonuses</div>
@@ -257,14 +247,14 @@ export default function LandingPage() {
                 <li>✔ Bonus: Social media image pack</li>
               </ul>
             </div>
-            <button className="w-full bg-white text-purple-700 font-bold py-3 rounded-full shadow hover:bg-gray-100 transition text-lg border border-purple-700">Get Pro Bundle</button>
+            <button className="w-full bg-[#f9f6f1] text-purple-700 font-bold py-3 rounded-full shadow hover:bg-gray-100 transition text-lg border border-purple-700">Get Pro Bundle</button>
             <div className="text-center text-xs text-gray-200 mt-2">One-time payment, no subscription</div>
           </div>
         </div>
       </section>
 
       {/* FAQ Section */}
-      <section className="w-full bg-white py-20 px-4 flex flex-col items-center">
+      <section className="w-full bg-[#f9f6f1] py-20 px-6 flex flex-col items-center">
         <h2 className="text-3xl sm:text-4xl font-extrabold text-[#212121] text-center mb-10">Frequently Asked Questions</h2>
         {/* Interactive FAQ */}
         <FAQSection />
